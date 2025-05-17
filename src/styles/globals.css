@@ -1,27 +1,9 @@
 /* File: src/styles/globals.css */
-
-/* 1) Import all of Tailwind’s utilities/components */
 @import "tailwindcss";
 
-/* 2) System font + background & text colors */
+/* You can still override global styles here */
 html {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
 }
-body {
-  background: #F5F5F7;    /* light gray page background */
-  color: #111;            /* dark text */
-}
 
-/* 3) Utility classes are all provided by Tailwind –
-      your pages then use these Tailwind classes:
-      - Containers use mx-auto, px-4, max-w-7xl
-      - Cards use bg-white, rounded-lg, shadow-card
-      - Inputs use border, rounded-lg, focus:ring-primary
-      - Buttons use bg-black, text-white, rounded-lg
-*/
-
-/* 4) Optional: small typography tweak for headings */
-h1, h2, h3, h4, h5, h6 {
-  @apply font-semibold tracking-tight;
-}

@@ -1,13 +1,13 @@
 // File: src/app/dashboard/page.tsx
-'use client';
+'use client'
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'
 import {
   AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+} from 'recharts'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 
 const revenueData = [
   { date: 'Jan', revenue: 4000 },
@@ -16,10 +16,10 @@ const revenueData = [
   { date: 'Apr', revenue: 4000 },
   { date: 'May', revenue: 6000 },
   { date: 'Jun', revenue: 7000 },
-];
+]
 
 export default function DashboardPage() {
-  const router = useRouter();
+  const router = useRouter()
 
   return (
     <div className="p-6">
@@ -43,14 +43,12 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Overdue Payments</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold text-red-600">
-            3
-          </CardContent>
+          <CardContent className="text-2xl font-bold text-red-600">3</CardContent>
         </Card>
       </div>
 
       {/* Revenue Chart */}
-      <div className="mt-8 bg-white rounded-lg shadow-card p-4 h-64">
+      <div className="mt-8 bg-base-100 rounded-lg shadow-xl p-4 h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={revenueData}
@@ -94,5 +92,5 @@ export default function DashboardPage() {
         </Button>
       </div>
     </div>
-  );
+  )
 }

@@ -1,11 +1,15 @@
 // File: src/providers/AuthProvider.tsx
 'use client';
 
-import React, { createContext, useState, ReactNode } from 'react';
-import api from '../lib/api';
+import React, {
+  createContext,
+  useState,
+  ReactNode,
+  useContext,
+} from 'react';
+import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
-// Match your Go API's /login user shape + the returned schema
 export interface User {
   id: string;
   name: string;
@@ -20,7 +24,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -33,10 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: { id: string; name: string; email: string };
     }>('/login', { email, password });
 
-    // 1️⃣ Store the JWT for future requests
     localStorage.setItem('token', res.data.token);
-
-    // 2️⃣ Populate `user` state from the response
     setUser({
       id: res.data.user.id,
       name: res.data.user.name,
@@ -44,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       schema: res.data.schema,
     });
 
-    // 3️⃣ Redirect to dashboard
     router.push('/dashboard');
   };
 
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
-    router.push('/login');
+    router.push('/');
   };
 
   return (
@@ -64,4 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+/**
+ * Custom hook to access authentication context
+ */
+export function useAuth() {
+  return useContext(AuthContext);
 }
