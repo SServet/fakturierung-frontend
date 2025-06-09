@@ -1,20 +1,22 @@
-// File: src/providers/AuthProvider.tsx
 'use client';
 
 import React, {
   createContext,
   useState,
+  useEffect,
   ReactNode,
   useContext,
 } from 'react';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { jwtDecode } from 'jwt-decode';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   schema: string;
+  exp: number;
 }
 
 interface AuthContextType {
@@ -24,11 +26,28 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+const AuthContext = createContext<AuthContextType>(null!);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode<User>(token);
+        if (decoded.exp * 1000 > Date.now()) {
+          setUser(decoded);
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+          localStorage.removeItem('token');
+        }
+      } catch {
+        localStorage.removeItem('token');
+      }
+    }
+  }, []);
 
   const login = async (email: string, password: string) => {
     const res = await api.post<{
@@ -37,14 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: { id: string; name: string; email: string };
     }>('/login', { email, password });
 
-    localStorage.setItem('token', res.data.token);
-    setUser({
-      id: res.data.user.id,
-      name: res.data.user.name,
-      email: res.data.user.email,
-      schema: res.data.schema,
-    });
+    const { token, schema, user: u } = res.data;
+    localStorage.setItem('token', token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
+    const decoded = jwtDecode<User>(token);
+    setUser({ ...decoded, name: u.name, email: u.email, schema });
     router.push('/dashboard');
   };
 
@@ -55,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    delete api.defaults.headers.common['Authorization'];
     setUser(null);
     router.push('/');
   };
@@ -66,9 +84,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * Custom hook to access authentication context
- */
 export function useAuth() {
   return useContext(AuthContext);
 }

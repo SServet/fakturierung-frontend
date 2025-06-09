@@ -1,25 +1,20 @@
 // File: src/app/login/page.tsx
 'use client';
 
-import { FormEvent, useState, useContext, useEffect } from 'react';
+import { FormEvent, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AuthProvider, useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '@/providers/AuthProvider';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Container } from '@/components/ui/container';
+import { Button } from '@/components/ui/buttons';
 
 export default function LoginPage() {
-  const { user, login } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  // Redirect authenticated users to homepage
-  useEffect(() => {
-    if (user) router.push('/');
-  }, [user, router]);
+  const [error, setError]       = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,13 +27,13 @@ export default function LoginPage() {
   };
 
   return (
-    <Container className="min-h-screen flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl font-semibold">Sign In</CardTitle>
+          <CardTitle className="text-center">Sign In</CardTitle>
         </CardHeader>
-        <CardContent className="p-8 space-y-6">
-          {error && <p className="text-red-600">{error}</p>}
+        <CardContent className="p-6 space-y-4">
+          {error && <p className="text-error">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="email"
@@ -54,12 +49,15 @@ export default function LoginPage() {
               onChange={e => setPassword(e.target.value)}
               required
             />
-            <Button type="submit" className="w-full">
-              Log In
-            </Button>
+            <Button type="submit" className="w-full">Log In</Button>
           </form>
+          <div className="text-center mt-2">
+            <Link href="/register" className="text-primary hover:underline">
+              Don’t have an account? Register
+            </Link>
+          </div>
         </CardContent>
       </Card>
-    </Container>
+    </div>
   );
 }

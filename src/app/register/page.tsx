@@ -1,31 +1,16 @@
-// File: src/app/register/page.tsx
 'use client';
 
-import { FormEvent, useState, useContext, useEffect } from 'react';
+import { FormEvent, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthProvider, useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '@/providers/AuthProvider';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Container } from '@/components/ui/container';
+import { Button } from '@/components/ui/buttons';
 
 const FIELDS = [
-  'first_name',
-  'last_name',
-  'email',
-  'password',
-  'password_confirm',
-  'company_name',
-  'address',
-  'city',
-  'country',
-  'zip',
-  'homepage',
-  'uid',
-  'salutation',
-  'title',
-  'phone_number',
-  'mobile_number',
+  'first_name','last_name','email','password','password_confirm',
+  'company_name','address','city','country','zip','homepage',
+  'uid','salutation','title','phone_number','mobile_number',
 ];
 
 export default function RegisterPage() {
@@ -34,7 +19,6 @@ export default function RegisterPage() {
   const [form, setForm] = useState(Object.fromEntries(FIELDS.map(f => [f, ''])));
   const [error, setError] = useState('');
 
-  // Redirect authenticated users to homepage
   useEffect(() => {
     if (user) router.push('/');
   }, [user, router]);
@@ -53,13 +37,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <Container className="min-h-screen flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle className="text-center text-2xl font-semibold">Create Account</CardTitle>
+          <CardTitle className="text-center">Create Account</CardTitle>
         </CardHeader>
-        <CardContent className="p-8 space-y-6">
-          {error && <p className="text-red-600">{error}</p>}
+        <CardContent className="p-6 space-y-4">
+          {error && <p className="text-error">{error}</p>}
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {FIELDS.map(f => (
               <Input
@@ -72,14 +56,10 @@ export default function RegisterPage() {
                 required
               />
             ))}
-            <div className="md:col-span-2">
-              <Button type="submit" className="w-full">
-                Register
-              </Button>
-            </div>
+            <Button type="submit" className="md:col-span-2 w-full">Register</Button>
           </form>
         </CardContent>
       </Card>
-    </Container>
+    </div>
   );
 }

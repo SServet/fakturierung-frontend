@@ -1,9 +1,0 @@
-/* File: src/styles/globals.css */
-@import "tailwindcss";
-
-/* You can still override global styles here */
-html {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, sans-serif;
-}
-

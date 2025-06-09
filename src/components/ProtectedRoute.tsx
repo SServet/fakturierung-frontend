@@ -1,21 +1,24 @@
-// src/app/page.tsx
+// src/components/ProtectedRoute.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
 
-export default function HomePage() {
+interface Props {
+  children: ReactNode;
+}
+
+export function ProtectedRoute({ children }: Props) {
   const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (user === null) {
       router.replace('/login');
-    } else {
-      router.replace('/dashboard');
     }
   }, [user, router]);
 
-  return null;
+  if (!user) return null;
+  return <>{children}</>;
 }

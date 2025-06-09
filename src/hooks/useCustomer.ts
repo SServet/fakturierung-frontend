@@ -1,34 +1,41 @@
-// src/hooks/useCustomers.ts
-import useSWR from 'swr';
-import api from '../lib/api';
+// File: src/hooks/useCustomer.ts
 
-// 1) Define exactly what a Customer looks like
-export interface Customer {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  company_name: string;
-  // …any other fields your API includes…
+import useSWR from 'swr'
+import api from '@/lib/api'
+
+export interface CustomerDetail {
+  id: number
+  company_name: string
+  first_name: string
+  last_name: string
+  email: string
+  address: string
+  city: string
+  country: string
+  zip: string
+  homepage: string
+  uid: string
+  salutation: string
+  title: string
+  phone_number: string
+  mobile_number: string
 }
 
-// 2) Tell SWR that data will be Customer[]
-export function useCustomers(): {
-  customers: Customer[];
-  isLoading: boolean;
-  isError: boolean;
+export function useCustomer(
+  id: string
+): {
+  customer: CustomerDetail | null
+  isLoading: boolean
+  isError: boolean
 } {
-  const { data, error } = useSWR<Customer[], Error>(
-    '/customers',
-    () =>
-      api
-        .get<{ customers: Customer[] }>('/customers')
-        .then(res => res.data.customers)
-  );
-  console.log(data)
+  const { data, error } = useSWR<{ customer: CustomerDetail }, Error>(
+    id ? `/customer/${id}` : null,
+    () => api.get(`/customer/${id}`).then(res => res.data)
+  )
+
   return {
-    customers: data ?? [],            // always an array
+    customer: data?.customer ?? null,
     isLoading: !error && !data,
     isError: !!error,
-  };
+  }
 }

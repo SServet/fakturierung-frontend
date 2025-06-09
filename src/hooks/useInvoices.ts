@@ -1,44 +1,37 @@
-// File: src/hooks/useInvoices.ts
 import useSWR from 'swr'
 import api from '@/lib/api'
 
-export type InvoiceStatus = 'Paid' | 'Pending' | 'Overdue'
-
-export interface Invoice {
+export interface InvoiceData {
+  id: number
+  invoice_number: string
+  customer: {
     id: number
-    invoice_number: string
-    customer: {
-      id: number
-      company_name: string
-      first_name: string
-      last_name: string
-      email: string
-    }
-    articles: any[] | null
-    subtotal: number
-    tax_total: number
-    total: number
-    draft: boolean
-    published: boolean
-    created_at: string  // ISO timestamp
+    company_name: string
+    first_name: string
+    last_name: string
+    email: string
   }
+  subtotal: number
+  tax_total: number
+  total: number
+  draft: boolean
+  published: boolean
+  created_at: string
+}
 
 export function useInvoices(): {
-  invoices: Invoice[]
+  invoices: InvoiceData[]
   isLoading: boolean
   isError: boolean
 } {
-    const { data, error } = useSWR<Invoice[], Error>(
-        '/invoice',
-        () =>
-          api
-            .get<{ invoices: Invoice[] }>('/invoices')
-            .then(res => res.data.invoices)
-      );
-      console.log(data)
-      return {
-        invoices: data ?? [],            // always an array
-        isLoading: !error && !data,
-        isError: !!error,
-      };
+  const { data, error } = useSWR<{ invoices: InvoiceData[] }, Error>(
+    '/invoices',
+    () => api.get('/invoices').then(res => res.data)
+  )
+
+  return {
+    invoices: data?.invoices ?? [],
+    isLoading: !error && !data,
+    isError: !!error,
+  }
 }
