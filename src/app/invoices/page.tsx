@@ -1,30 +1,30 @@
-// src/app/invoices/page.tsx
+// File: src/app/invoices/page.tsx
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useInvoices, InvoiceData } from '@/hooks/useInvoices';
 import { Container } from '@/components/ui/container';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/buttons';
-
-type Filter = '' | 'Published' | 'Draft';
+import api from '@/lib/api';
 
 export default function InvoicesPage() {
   const router = useRouter();
   const { invoices, isLoading, isError } = useInvoices();
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<Filter>('');
 
-  const filtered = invoices.filter(inv => {
-    const matchesSearch =
-      inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customer.company_name.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter =
-      !filter || (filter === 'Published' ? inv.published : inv.draft);
-    return matchesSearch && matchesFilter;
-  });
+  const formatEuro = (v?: number) =>
+    typeof v === 'number' ? `€${v.toFixed(2)}` : '—';
+
+  const taxRate = (sub?: number, tax?: number) =>
+    sub && tax != null && sub > 0
+      ? `${((tax / sub) * 100).toFixed(2)}%`
+      : '—';
+
+  const handlePublish = async (invoiceId: number) => {
+    await api.put(`/invoices/${invoiceId}/publish`);
+    router.refresh();
+  };
 
   return (
     <ProtectedRoute>
@@ -33,30 +33,10 @@ export default function InvoicesPage() {
           <h1 className="text-3xl font-semibold">Invoices</h1>
           <Button onClick={() => router.push('/invoices/new')}>New Invoice</Button>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <input
-            type="text"
-            placeholder="Search by invoice or client"
-            className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-primary"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <select
-            className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-primary"
-            value={filter}
-            onChange={e => setFilter(e.target.value as Filter)}
-          >
-            <option value="">All</option>
-            <option value="Published">Published</option>
-            <option value="Draft">Draft</option>
-          </select>
-        </div>
-
         <Card>
           <CardContent className="overflow-x-auto p-0">
-            {isLoading && <p className="p-4">Loading…</p>}
-            {isError && <p className="p-4 text-error">Error loading.</p>}
+            {isLoading && <p className="p-4">Loading invoices…</p>}
+            {isError && <p className="p-4 text-error">Failed to load invoices.</p>}
             {!isLoading && !isError && (
               <table className="table w-full">
                 <thead>
@@ -64,18 +44,24 @@ export default function InvoicesPage() {
                     <th>Invoice #</th>
                     <th>Client</th>
                     <th>Created</th>
-                    <th className="text-right">Total</th>
+                    <th className="text-right">Tax %</th>
+                    <th className="text-right">Total (€)</th>
                     <th className="text-center">Status</th>
-                    <th className="text-right">Action</th>
+                    <th className="text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((inv: InvoiceData) => (
+                  {invoices.map((inv: InvoiceData) => (
                     <tr key={inv.id}>
                       <td>{inv.invoice_number}</td>
                       <td>{inv.customer.company_name}</td>
-                      <td>{new Date(inv.created_at).toLocaleDateString()}</td>
-                      <td className="text-right">${inv.total.toFixed(2)}</td>
+                      <td>
+                        {new Date(
+                          inv.created_at.replace(/\.(\d{3})\d+Z$/, '.$1Z')
+                        ).toLocaleDateString()}
+                      </td>
+                      <td className="text-right">{taxRate(inv.subtotal, inv.tax_total)}</td>
+                      <td className="text-right">{formatEuro(inv.total)}</td>
                       <td className="text-center">
                         <span
                           className={`badge ${
@@ -85,7 +71,7 @@ export default function InvoicesPage() {
                           {inv.published ? 'Published' : 'Draft'}
                         </span>
                       </td>
-                      <td className="text-right">
+                      <td className="text-right space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -93,6 +79,24 @@ export default function InvoicesPage() {
                         >
                           View
                         </Button>
+                        {!inv.published && (
+                          <>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => router.push(`/invoices/${inv.id}/edit`)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handlePublish(inv.id)}
+                            >
+                              Publish
+                            </Button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}

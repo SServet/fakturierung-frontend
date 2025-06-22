@@ -66,8 +66,6 @@ export default function CustomerDetailPage({
                   <dd>
                     <a
                       href={customer.homepage}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="text-primary hover:underline"
                     >
                       {customer.homepage}

@@ -1,98 +1,98 @@
+// File: src/app/customers/new/page.tsx
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
 import api from '@/lib/api';
+import { useCustomers, CustomerOverview } from '@/hooks/useCustomers';
 import { Container } from '@/components/ui/container';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/buttons';
 
 export default function NewCustomerPage() {
   const router = useRouter();
+  const { customers, isLoading, isError } = useCustomers();
   const [form, setForm] = useState({
-    company_name: '',
     first_name: '',
     last_name: '',
     email: '',
-    address: '',
-    city: '',
-    country: '',
-    zip: '',
-    homepage: '',
-    uid: '',
-    salutation: '',
-    title: '',
-    phone_number: '',
-    mobile_number: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
     try {
-      await api.post('/customer', form);
+      await api.post('/customers', form);
       router.push('/customers');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error creating customer');
-    } finally {
-      setLoading(false);
+      if (err.response?.status === 405) {
+        setError('Method Not Allowed: verify endpoint & HTTP verb.');
+      } else {
+        setError(err.response?.data?.message || err.message);
+      }
     }
   };
 
   return (
-    <ProtectedRoute>
-      <Container className="py-8">
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle>Create Customer</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 space-y-4">
-            {error && <p className="text-error">{error}</p>}
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                ['company_name', 'Company Name', true],
-                ['first_name',   'First Name',   true],
-                ['last_name',    'Last Name',    true],
-                ['email',        'Email',        true],
-                ['address',      'Address',      false],
-                ['city',         'City',         false],
-                ['country',      'Country',      false],
-                ['zip',          'ZIP',          false],
-                ['homepage',     'Homepage',     false],
-                ['uid',          'UID',          false],
-                ['salutation',   'Salutation',   false],
-                ['title',        'Title',        false],
-                ['phone_number', 'Phone',        false],
-                ['mobile_number','Mobile',       false],
-              ].map(([key, label, req]) => (
-                <Input
-                  key={key}
-                  name={key}
-                  type="text"
-                  placeholder={label as string}
-                  value={(form as any)[key as string]}
-                  onChange={handleChange}
-                  required={req as boolean}
-                />
-              ))}
-              <div className="md:col-span-2 flex justify-end">
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Saving…' : 'Save Customer'}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </Container>
-    </ProtectedRoute>
+    <Container className="py-8">
+      <Card className="max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Create New Customer</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {error && <p className="text-error mb-4">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              name="first_name"
+              placeholder="First Name"
+              required
+              value={form.first_name}
+              onChange={handleChange}
+            />
+            <Input
+              name="last_name"
+              placeholder="Last Name"
+              required
+              value={form.last_name}
+              onChange={handleChange}
+            />
+            <Input
+              name="email"
+              type="email"
+              placeholder="Email"
+              required
+              value={form.email}
+              onChange={handleChange}
+            />
+            <Button type="submit" className="w-full">
+              Create Customer
+            </Button>
+          </form>
+
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold mb-2">Existing Customers</h2>
+            {isLoading && <p>Loading…</p>}
+            {isError && <p className="text-error">Failed to load.</p>}
+            {!isLoading && !isError && (
+              <ul className="space-y-2">
+                {customers.map((c: CustomerOverview) => (
+                  <li key={c.id} className="flex justify-between">
+                    <span>
+                      {c.company_name}
+                    </span>
+                    <span className="text-sm text-gray-500">{c.email}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </Container>
   );
 }

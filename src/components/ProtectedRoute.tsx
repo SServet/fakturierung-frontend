@@ -5,20 +5,25 @@ import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
 
-interface Props {
-  children: ReactNode;
-}
+interface Props { children: ReactNode; }
 
 export function ProtectedRoute({ children }: Props) {
-  const { user } = useAuth();
+  const { user, initializing } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user === null) {
+    // once initialization is done, if no user → redirect
+    if (!initializing && user === null) {
       router.replace('/login');
     }
-  }, [user, router]);
+  }, [initializing, user, router]);
 
-  if (!user) return null;
+  // While checking token, render nothing (or a spinner)
+  if (initializing) return null;
+
+  // If user is null (and init finished), ProtectedRoute will already have redirected,
+  // but we must not render protected content unless user exists:
+  if (user === null) return null;
+
   return <>{children}</>;
 }

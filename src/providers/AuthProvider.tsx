@@ -1,3 +1,4 @@
+// src/providers/AuthProvider.tsx
 'use client';
 
 import React, {
@@ -21,6 +22,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
+  initializing: boolean;             // NEW
   login: (email: string, password: string) => Promise<void>;
   register: (data: Record<string, any>) => Promise<void>;
   logout: () => void;
@@ -30,6 +32,7 @@ const AuthContext = createContext<AuthContextType>(null!);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [initializing, setInitializing] = useState(true);  // NEW
   const router = useRouter();
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('token');
       }
     }
+    setInitializing(false);  // finished checking localStorage
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -74,11 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
-    router.push('/');
+    router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, initializing, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
