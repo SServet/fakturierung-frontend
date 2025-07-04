@@ -21,8 +21,11 @@ export default function InvoicesPage() {
       ? `${((tax / sub) * 100).toFixed(2)}%`
       : '—';
 
-  const handlePublish = async (invoiceId: number) => {
-    await api.put(`/invoices/${invoiceId}/publish`);
+  const handlePublish = async (invoiceId: number, invoiceNumber: string) => {
+    await api.put(`/invoices/publish/${invoiceId}`, {
+                      invoice_id: invoiceId,
+                      invoice_number: invoiceNumber,
+                    });
     router.refresh();
   };
 
@@ -91,7 +94,7 @@ export default function InvoicesPage() {
                             <Button
                               variant="primary"
                               size="sm"
-                              onClick={() => handlePublish(inv.id)}
+                              onClick={() => handlePublish(inv.id, inv.invoice_number)}
                             >
                               Publish
                             </Button>

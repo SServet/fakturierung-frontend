@@ -12,26 +12,53 @@ import { Button } from '@/components/ui/buttons';
 
 interface Article {
   id: number;
+  article_id: string;
   description: string;
   amount: number;
   unit_price: number;
-  net_price: number;
   tax_rate: number;
+  net_price: number;
+  percent_discount: number;
+  euro_discount: number;
   tax_amount: number;
   gross_price: number;
+}
+
+interface CustomerDetail {
+  id: number;
+  company_name: string;
+  address: string;
+  city: string;
+  country: string;
+  zip: string;
+  homepage: string;
+  uid: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  mobile_number: string;
+  saluatation: string;
+  title: string;
 }
 
 interface InvoiceDetail {
   id: number;
   invoice_number: string;
-  customer: { id: number; company_name: string };
-  articles: Article[] | null;
+  customer: CustomerDetail;
+  articles: Article[];
   subtotal: number;
   tax_total: number;
+  total_discount: number;
   total: number;
-  draft: boolean;     // you can drop this if unused
+  draft: boolean;
   published: boolean;
   created_at: string;
+}
+
+interface InvoiceResponse {
+  invoice: InvoiceDetail;
+  message: string;
 }
 
 export default function InvoiceDetailPage() {
@@ -40,35 +67,34 @@ export default function InvoiceDetailPage() {
   const { user, initializing } = useAuth();
   const shouldFetch = !initializing && !!user && !!id;
 
-  const { data, error } = useSWR<{ customer: InvoiceDetail }>(
+  const fetcher = () =>
+    api.get<InvoiceResponse>(`/invoices/${id}`).then(res => res.data.invoice);
+
+  const { data: invoice, error } = useSWR<InvoiceDetail>(
     shouldFetch ? `/invoices/${id}` : null,
-    () => api.get(`/invoices/${id}`).then(r => r.data)
+    fetcher
   );
 
-  const invoice = data?.customer;
   const isLoading = initializing || (shouldFetch && !invoice && !error);
-
-  const formatEuro = (v?: number) =>
-    typeof v === 'number' ? `€${v.toFixed(2)}` : '—';
-
-  const formatPercent = (v?: number) =>
-    typeof v === 'number' ? `${(v * 100).toFixed(2)}%` : '—';
-
-  const handlePublish = async (invoiceId: number) => {
-    await api.put(`/invoices/${invoiceId}/publish`);
-    router.refresh();
-  };
 
   if (isLoading) return <p className="p-4">Loading invoice…</p>;
   if (!shouldFetch) return null;
   if (error || !invoice) return <p className="p-4 text-error">Failed to load invoice.</p>;
 
-  let createdDate = '—';
-  if (invoice.created_at) {
+  const safeFormat = (val: unknown, digits = 2) =>
+    typeof val === 'number' ? val.toFixed(digits) : '—';
+
+  const safeString = (val: unknown) =>
+    typeof val === 'string' && val.trim() !== '' ? val : '—';
+
+  const createdDate = (() => {
+    if (!invoice?.created_at) return '—';
     const iso = invoice.created_at.replace(/\.(\d{3})\d+Z$/, '.$1Z');
-    const d = new Date(iso);
-    createdDate = isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString();
-  }
+    const dateObj = new Date(iso);
+    return isNaN(dateObj.getTime()) ? 'Invalid date' : dateObj.toLocaleDateString();
+  })();
+
+  const customer = invoice.customer || {};
 
   return (
     <ProtectedRoute>
@@ -82,55 +108,71 @@ export default function InvoiceDetailPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => router.push(`/invoices/${id}/edit`)}
-              >
+                onClick={() => router.push(`/invoices/${id}/edit`)}>
                 Edit Invoice
               </Button>
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => handlePublish(invoice.id)}
-              >
+                onClick={() =>
+                  api.put(`/invoices/publish/${id}`, {
+                      invoice_id: id,
+                      invoice_number: invoice.invoice_number,
+                    }).then(() => router.refresh())
+                }>
                 Publish
               </Button>
             </>
           )}
         </div>
 
+        {/* Invoice Summary */}
         <Card className="max-w-3xl mx-auto">
           <CardHeader>
-            <CardTitle>Invoice {invoice.invoice_number}</CardTitle>
+            <CardTitle>Invoice {safeString(invoice.invoice_number)}</CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
               <dt className="font-medium">Customer</dt>
-              <dd>{invoice.customer.company_name}</dd>
+              <dd>{safeString(customer.company_name)}</dd>
+              <dt className="font-medium">Address</dt>
+              <dd>
+                {safeString(customer.address)}, {safeString(customer.zip)}{' '}
+                {safeString(customer.city)}
+              </dd>
+              <dt className="font-medium">Contact</dt>
+              <dd>{safeString(customer.email)}</dd>
               <dt className="font-medium">Created</dt>
               <dd>{createdDate}</dd>
               <dt className="font-medium">Subtotal</dt>
-              <dd>{formatEuro(invoice.subtotal)}</dd>
+              <dd>€{safeFormat(invoice.subtotal)}</dd>
               <dt className="font-medium">Tax Total</dt>
-              <dd>{formatEuro(invoice.tax_total)}</dd>
+              <dd>€{safeFormat(invoice.tax_total)}</dd>
+              <dt className="font-medium">Total Discount</dt>
+              <dd>€{safeFormat(invoice.total_discount)}</dd>
               <dt className="font-medium">Total</dt>
-              <dd>{formatEuro(invoice.total)}</dd>
+              <dd>€{safeFormat(invoice.total)}</dd>
               <dt className="font-medium">Status</dt>
               <dd>{invoice.published ? 'Published' : 'Draft'}</dd>
             </dl>
           </CardContent>
         </Card>
 
+        {/* Line Items */}
         <Card className="max-w-3xl mx-auto">
           <CardHeader>
             <CardTitle>Line Items</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">
-            {invoice.articles && invoice.articles.length > 0 ? (
+            {Array.isArray(invoice.articles) && invoice.articles.length > 0 ? (
               <table className="table w-full">
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th className="text-center">Qty</th>
+                    <th className="text-center">Amount</th>
                     <th className="text-right">Unit Price (€)</th>
+                    <th className="text-right">Discount (%)</th>
+                    <th className="text-right">Discount (€)</th>
                     <th className="text-right">Tax Rate (%)</th>
                     <th className="text-right">Net Price (€)</th>
                     <th className="text-right">Tax Amount (€)</th>
@@ -140,13 +182,15 @@ export default function InvoiceDetailPage() {
                 <tbody>
                   {invoice.articles.map(item => (
                     <tr key={item.id}>
-                      <td>{item.description}</td>
-                      <td className="text-center">{item.amount}</td>
-                      <td className="text-right">{formatEuro(item.unit_price)}</td>
-                      <td className="text-right">{formatPercent(item.tax_rate)}</td>
-                      <td className="text-right">{formatEuro(item.net_price)}</td>
-                      <td className="text-right">{formatEuro(item.tax_amount)}</td>
-                      <td className="text-right">{formatEuro(item.gross_price)}</td>
+                      <td>{safeString(item.description)}</td>
+                      <td className="text-center">{item.amount ?? '—'}</td>
+                      <td className="text-right">€{safeFormat(item.unit_price)}</td>
+                      <td className="text-right">{safeFormat(item.percent_discount * 100)}%</td>
+                      <td className="text-right">€{safeFormat(item.euro_discount)}</td>
+                      <td className="text-right">{safeFormat(item.tax_rate * 100)}%</td>
+                      <td className="text-right">€{safeFormat(item.net_price)}</td>
+                      <td className="text-right">€{safeFormat(item.tax_amount)}</td>
+                      <td className="text-right">€{safeFormat(item.gross_price)}</td>
                     </tr>
                   ))}
                 </tbody>
